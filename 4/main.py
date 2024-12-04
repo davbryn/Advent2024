@@ -12,6 +12,7 @@ def count_word_in_direction(grid, word, x, y, dx, dy):
             return 0  # Character mismatch
     return 1  # Word found in this direction
 
+
 def count_straight_words_in_grid(word, grid):
     directions = [
         (-1, -1), (-1, 0), (-1, 1),  # Up-left, Up, Up-right
@@ -26,19 +27,18 @@ def count_straight_words_in_grid(word, grid):
                     count += count_word_in_direction(grid, word, x, y, dx, dy)
     return count
 
-def count_crossed_word_in_grid(word, grid):
+def count_crossed_word_in_grid(grid):
     conv_filter_dir = [
         (-1, -1),       (-1, 1),  # Up-left, Up, Up-right
         (1, -1),        (1, 1)     # Down-left, Down, Down-right
     ]
-
     num_crosses = 0
-    for x in range(1, len(grid)-1):
-        for y in range(1, len(grid[0])-1):
-            if grid[x][y] == 'A': # Central 'A
+    for x in range(len(grid)):
+        for y in range(len(grid[0])):
+            if grid[x][y] == 'A': # Start of the word
                 count = 0
                 for dx, dy in conv_filter_dir:
-                    count += count_word_in_direction(grid, word, x + dx, y + dy, -dx, -dy)
+                    count += count_word_in_direction(grid, 'MAS', x + dx, y + dy, -dx, -dy)
                 if count == 2:  # Make sure we found two words
                     num_crosses += 1
     return num_crosses
@@ -46,4 +46,4 @@ def count_crossed_word_in_grid(word, grid):
 # Example usage:
 grid = load_grid('input.txt')
 print(count_straight_words_in_grid('XMAS', grid)) # Puzzle 1
-print(count_crossed_word_in_grid('MAS', grid))  # Puzzle 2
+print(count_crossed_word_in_grid(grid))  # Puzzle 2
