@@ -21,9 +21,11 @@ class PrintQueue:
                 l_index = page_index[l]
                 for r in dependents:
                     if r in page_index and page_index[r] < l_index:
-                        return False  # Rule is violated
+                        return False
         return True
 
+    '''This was a failure because the actual test data contained cyclical references - But I am not wasting it
+        so I will use it in part 2 where I won't need all the data from the data set'''
     def topological_sort(self, update):
         relevant_rules = defaultdict(set)
         relevant_dependencies = defaultdict(set)
