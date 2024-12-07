@@ -41,8 +41,8 @@ def walk_map(map_2d_array, pos, dir, debug_draw=False):
         
         if debug_draw: draw_map(map_2d_array)
         next_pos = pos + dir
+        # Catch the case where we have walked in a circle
         if rot_count > 4:
-            print('Loop detected')
             return None
 
     return chosen_path
@@ -55,14 +55,12 @@ def puzzle1():
 def puzzle2():
     map_2d_array, pos = load_map('input.txt')
     dir = Point2D(0, -1)
-    #if turning right puts me on a path I've already visited (in the same direction)
-    # I would be in a loop if I put a Printing Press in front of me.
     path_walked = walk_map(map_2d_array, pos, dir, debug_draw=False)
-    steps = len(path_walked)
-    print('steps ' + str(steps))
+    # Re walk the path taken and try putting an obstacle in each step
+    # If we don't find a walkable path we have trapped the walker
     num_danger_nodes = 0
     for enum, cell in enumerate(path_walked):
-        print('percentage ' + str((enum/steps) * 100))
+        #print('percentage ' + str((enum/steps) * 100))
         if enum == 0:
             continue
         map, pos = load_map('input.txt')
