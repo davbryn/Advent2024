@@ -16,7 +16,6 @@ def solve(solutions, operators):
     for test_value, numbers in solutions:
         # Use a set rather than a list as this will not allow duplicates to be added to the possible values
         # and we don't have to check for duplicates in the list
-
         possibles = {numbers.pop(0)}
         for curr in numbers:
             possibles = {
