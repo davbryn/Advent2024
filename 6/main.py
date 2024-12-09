@@ -60,7 +60,7 @@ def puzzle2():
     # If we don't find a walkable path we have trapped the walker
     num_danger_nodes = 0
     for enum, cell in enumerate(path_walked):
-        #print('percentage ' + str((enum/steps) * 100))
+        print('percentage ' + str((enum/len(path_walked)) * 100))
         if enum == 0:
             continue
         map, pos = load_map('input.txt')
