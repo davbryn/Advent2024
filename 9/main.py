@@ -29,6 +29,19 @@ def as_string(disk):
 def debug_draw_disk(disk):
     print(as_string(disk))
 
+def checksum(disk):
+        checksum = 0
+        counter = 0
+        for file in disk:
+            for value in file:
+                    if value != '.': checksum += counter * int(value)
+                    counter += 1
+        return checksum
+
+
+""" Assuming for the purposes of a disk fragmenter that we want to be operating 
+    on a mutable data structure and perform the file movement in the same momory space
+    So I won't be making a copy of the data """
 def defragment(disk):
 
     def first_gap():
@@ -38,6 +51,9 @@ def defragment(disk):
             if file[0] == '.':
                 return disk[index]
         return None
+    def count_gaps(disk):
+        s = as_string(disk)
+        return len(re.findall(r'\.+', s))
     def last_file():
         last_index = None
         for index, file in enumerate(disk):
@@ -45,13 +61,23 @@ def defragment(disk):
                 last_index = index
         return disk[last_index]
     def is_defragmented():
-        pattern = r'^\d+\.{0,}$'  # Matches one or more digits followed by zero or more '.'
-        return bool(re.fullmatch(pattern, as_string(disk)))
+        s = as_string(disk)
+        has_seen_dot = False
+
+        for char in s:
+            if char == '.':
+                has_seen_dot = True  # Once we encounter a dot, all subsequent characters must be dots
+            elif has_seen_dot and char.isdigit():
+                return False  # A digit after a dot means it's not defragmented
+
+        return True
+    
     
     gap = first_gap()
     file_to_move = last_file()
     files_moved = 0
     while gap is not None and file_to_move is not None:
+        print("Gaps remaining: ", count_gaps(disk))
         if is_defragmented():
            break
         for index, space in enumerate(gap):
@@ -64,16 +90,12 @@ def defragment(disk):
                     file_to_move = last_file()
                     files_moved = 0
         gap = first_gap()
-        debug_draw_disk(disk)
-        
-        
-
-    return True
-    
-
+        #debug_draw_disk(disk)
 
 disk_map = load_text_from_file('input.txt')
+#disk_map = list('2333133121414131402')
 disk = build_files_and_spaces(disk_map)
 debug_draw_disk(disk)
 defragment(disk)
 debug_draw_disk(disk)
+print(checksum(disk))
