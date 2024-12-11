@@ -13,6 +13,22 @@ class Chunk:
 
     def __str__(self):
         return ''.join(self.content)
+    
+    def insert(self, index, value):
+        self.content.insert(index, value)
+
+    def pop(self, index=-1):
+        return self.content.pop(index)
+
+    def append(self, value):
+        self.content.append(value)
+    
+    def has_content(self):
+        return len(self.content) > 0
+    
+    def has_free_blocks(self):
+        return any(char == '.' for char in self.content)
+    
 
 class Slot(Chunk):
     def __init__(self, size):
@@ -50,3 +66,21 @@ class Disk:
 
     def __str__(self):
         return ''.join(str(chunk) for chunk in self.chunks)
+    
+    def get_all_slots(self):
+        return [chunk for chunk in self.chunks if isinstance(chunk, Slot)]
+    
+    def get_all_files(self):
+        return [chunk for chunk in self.chunks if isinstance(chunk, File)]  
+    
+    def get_last_file(self):
+        for chunk in reversed(self.chunks):
+            if isinstance(chunk, File) and chunk.has_content():
+                return chunk
+        return None
+    
+    def get_first_slot(self):
+        for chunk in self.chunks:
+            if isinstance(chunk, Slot) and chunk.has_free_blocks():
+                return chunk
+        return None

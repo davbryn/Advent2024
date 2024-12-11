@@ -1,5 +1,5 @@
 
-from disk import Disk, File, Slot
+from disk import Disk
 from defragmentor import Defragmentor
 
 def load_text_from_file(file_path):
@@ -16,12 +16,6 @@ def build_disk(disk_map):
         else:  # Odd index: add Slot
             disk.add_slot(size)
     return disk
-
-def as_string(disk):   
-    return ''.join(''.join(file) for file in disk)
-
-def debug_draw_disk(disk):
-    print(as_string(disk))
 
 def checksum(disk): # Move this to the Disk class
         checksum = 0
@@ -44,6 +38,10 @@ disk = build_disk(disk_map)
 print(disk) 
 print(f"Number of files: {disk.num_files()}")
 print(f"Number of slots: {disk.num_slots()}")
+defragmentor = Defragmentor(disk)
+defragmentor.set_debug_draw(True)
+defragmentor.defragment(whole_file=False)
+
 #debug_draw_disk(disk)
 #defragment(disk, whole_file=True)
 #debug_draw_disk(disk)

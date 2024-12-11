@@ -2,33 +2,35 @@ from disk import Disk
 class Defragmentor:
     def __init__(self, disk):
         self.disk = disk
+        self.debug_draw = False
 
+    def set_debug_draw(self, debug_draw):
+        self.debug_draw = debug_draw
+        
     def defragment(self, whole_file=False):
         if whole_file:
             self._defragment_whole_file()
         else:
-            self._defragment_individual_files()
+            self._defragment_individual_blocks()
 
     def _defragment_whole_file(self):
-        flattened_disk = [block for file in self.disk for block in file if block != '.']
-        index = 0
-        for file in self.disk:
-            for i in range(len(file)):
-                if file[i] != '.':
-                    file[i] = flattened_disk[index]
-                    index += 1
-                else:
-                    file[i] = '.'
+        pass
 
-    def _defragment_individual_files(self):
-        for file in self.disk:
-            blocks = [block for block in file if block != '.']
-            for i in range(len(file)):
-                if i < len(blocks):
-                    file[i] = blocks[i]
-                else:
-                    file[i] = '.'
-
-    def defragment(disk, whole_file=False):
-        defragmentor = Defragmentor(disk)
-        defragmentor.defragment(whole_file)
+    def fragments_exist(self):
+        return any(slot.has_free_blocks() for slot in self.disk.get_all_slots())
+    
+    def _defragment_individual_blocks(self):
+        while self.fragments_exist():
+            next_file = self.disk.get_last_file()
+            next_slot = self.disk.get_first_slot()
+            while next_slot and next_slot.has_free_blocks():
+                if not next_file.has_content():
+                    next_file = self.disk.get_last_file()
+                next_slot.pop()
+                next_slot.insert(0, next_file.pop())
+                if not next_slot.has_free_blocks():
+                    next_slot = self.disk.get_first_slot()
+                
+                if self.debug_draw:
+                    print(self.disk)
+                    print()
