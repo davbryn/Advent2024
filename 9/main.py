@@ -1,26 +1,20 @@
-import re
+
+from disk import Disk, File, Slot
+from defragmentor import Defragmentor
 
 def load_text_from_file(file_path):
-    try:
-        with open(file_path, 'r') as file:
-            return list(file.read())
-    except FileNotFoundError:
-        print(f"File '{file_path}' not found.")
-        return None
-    
-def build_files_and_spaces(disk_map):
-    disk = []
-    disk_count = -1
-    for index, size_of_block in enumerate(disk_map):
-        file = []
-        if index % 2 == 0:
-            disk_count += 1
-            label = str(disk_count)
-        else:
-            label = '.'
-        for _ in range(int(size_of_block)):
-            file.append(label)
-        if len(file) > 0: disk.append(file) 
+    with open(file_path, 'r') as file:
+        return [int(char) for char in file.read().strip()]
+
+            
+                
+def build_disk(disk_map):
+    disk = Disk()
+    for index, size in enumerate(disk_map):
+        if index % 2 == 0:  # Even index: add File
+            disk.add_file(size)
+        else:  # Odd index: add Slot
+            disk.add_slot(size)
     return disk
 
 def as_string(disk):   
@@ -29,7 +23,7 @@ def as_string(disk):
 def debug_draw_disk(disk):
     print(as_string(disk))
 
-def checksum(disk):
+def checksum(disk): # Move this to the Disk class
         checksum = 0
         counter = 0
         for file in disk:
@@ -42,60 +36,15 @@ def checksum(disk):
 """ Assuming for the purposes of a disk fragmenter that we want to be operating 
     on a mutable data structure and perform the file movement in the same momory space
     So I won't be making a copy of the data """
-def defragment(disk):
-
-    def first_gap():
-        for index, file in enumerate(disk):
-            if len(file) == 0:
-                continue
-            if file[0] == '.':
-                return disk[index]
-        return None
-    def count_gaps(disk):
-        s = as_string(disk)
-        return len(re.findall(r'\.+', s))
-    def last_file():
-        last_index = None
-        for index, file in enumerate(disk):
-            if file[0] != '.':
-                last_index = index
-        return disk[last_index]
-    def is_defragmented():
-        s = as_string(disk)
-        has_seen_dot = False
-
-        for char in s:
-            if char == '.':
-                has_seen_dot = True  # Once we encounter a dot, all subsequent characters must be dots
-            elif has_seen_dot and char.isdigit():
-                return False  # A digit after a dot means it's not defragmented
-
-        return True
-    
-    
-    gap = first_gap()
-    file_to_move = last_file()
-    files_moved = 0
-    while gap is not None and file_to_move is not None:
-        print("Gaps remaining: ", count_gaps(disk))
-        if is_defragmented():
-           break
-        for index, space in enumerate(gap):
-            file_index = len(file_to_move) - files_moved - 1
-            if space == '.':
-                gap[index] = file_to_move[file_index]
-                file_to_move[file_index] = '.'
-                files_moved += 1
-                if files_moved == len(file_to_move):
-                    file_to_move = last_file()
-                    files_moved = 0
-        gap = first_gap()
-        #debug_draw_disk(disk)
+#def defragment(disk, whole_file=False):
 
 disk_map = load_text_from_file('input.txt')
-#disk_map = list('2333133121414131402')
-disk = build_files_and_spaces(disk_map)
-debug_draw_disk(disk)
-defragment(disk)
-debug_draw_disk(disk)
-print(checksum(disk))
+disk_map = [2,3,3,3,1,3,3,1,2,1,4,1,4,1,3,1,4,0,2]
+disk = build_disk(disk_map)
+print(disk) 
+print(f"Number of files: {disk.num_files()}")
+print(f"Number of slots: {disk.num_slots()}")
+#debug_draw_disk(disk)
+#defragment(disk, whole_file=True)
+#debug_draw_disk(disk)
+#print(checksum(disk))
