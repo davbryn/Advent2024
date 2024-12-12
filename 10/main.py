@@ -27,7 +27,7 @@ def cell_at(pos, map_data_2d_array):
 
 def build_graph(map_data_2d):
     graph = {}
-    directions = [(0, 1), (0, -1), (1, 0), (-1, 0)] # N, S, E, W NO DIAGONALS!
+    directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
     for row_index, row in enumerate(map_data_2d):
         for col_index, cell in enumerate(row):
             cur_pos = Point2D(col_index, row_index)
@@ -39,10 +39,8 @@ def build_graph(map_data_2d):
                     continue
                 neigh_char = cell_at(new_pos, map_data_2d)
                 new_val = int(neigh_char)
-                # Add neighbor if height increases by exactly 1
                 if new_val - cur_val == 1:
                     neighbors.append(new_pos)
-
             graph[cur_pos] = neighbors
 
     return graph
@@ -50,8 +48,6 @@ def build_graph(map_data_2d):
 def score_trails():
     map_data, trail_heads, summits = load_map('input.txt')
     graph = build_graph(map_data)
-
-    # Extract just the positions from summits
     summit_positions = [pos for pos, char in summits]
     dfs = DFS(graph)
     trail_head_score_sum = 0
@@ -59,14 +55,10 @@ def score_trails():
     for (start_pos, start_char) in trail_heads:
         reachable_summits = set()
         for summit_pos in summit_positions:
-            # Find all paths from the trailhead to the summit
             paths = dfs.get_all_paths(start_pos, summit_pos)
             if paths:
-                # If there is at least one path, this summit is reachable
                 reachable_summits.add(summit_pos)
-                # The rating for this trailhead is the number of unique paths reaching it
                 trail_head_ratings += len(paths)
-        # The score for this trailhead is how many summits are reachable
         trail_head_score = len(reachable_summits)
         trail_head_score_sum += trail_head_score
     return trail_head_score_sum, trail_head_ratings
