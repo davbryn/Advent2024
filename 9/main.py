@@ -1,48 +1,76 @@
-
-from disk import Disk
-from defragmentor import Defragmentor
+import pygame
 
 def load_text_from_file(file_path):
     with open(file_path, 'r') as file:
-        return [int(char) for char in file.read().strip()]
+        return file.read().strip()
 
-            
-                
-def build_disk(disk_map):
-    disk = Disk()
-    for index, size in enumerate(disk_map):
-        if index % 2 == 0:  # Even index: add File
-            disk.add_file(size)
-        else:  # Odd index: add Slot
-            disk.add_slot(size)
-    return disk
+def build_memory_and_blocks(data: str):
+    counts = list(map(int, data.strip()))
+    memory = []
+    blocks = []
+    block_id = 0
+    current_index = 0
 
-def checksum(disk): # Move this to the Disk class
-        checksum = 0
-        counter = 0
-        for file in disk:
-            for value in file:
-                    if value != '.': checksum += counter * int(value)
-                    counter += 1
-        return checksum
+    for i, count in enumerate(counts):
+        if i % 2 == 0:  # Blocks
+            memory.extend([block_id] * count)
+            blocks.append((block_id, count, current_index))
+            block_id += 1
+        else:  # Spaces
+            memory.extend(["."] * count)
+        current_index += count
+    
+    return memory, blocks
+
+def compute_checksum(memory):
+    return sum(i * val for i, val in enumerate(memory) if val != ".")
+
+def defragment_using_partial_blocks(initial_memory, blocks):
+    memory = initial_memory[:]
+    for block_id, block_size, block_start in reversed(blocks):
+        filled = 0
+        for i in range(block_start):
+            if memory[i] == "." or memory[i] == block_id:
+                memory[i] = block_id
+                filled += 1
+                if filled == block_size:
+                    break
+
+        # Clear the old position of the block
+        for i in range(filled):
+            memory[block_start + block_size - i - 1] = "."
+
+    return memory
+
+def defragment_using_whole_blocks(initial_memory, blocks):
+    memory = initial_memory[:]
+    for block_id, block_size, block_start in reversed(blocks):
+        empty_count = 0
+        space_start = -1
+
+        # Find enough space for the block
+        for i in range(block_start):
+            if memory[i] == ".":
+                empty_count += 1
+                if empty_count == block_size:
+                    space_start = i - block_size + 1
+                    break
+            else:
+                empty_count = 0
+                space_start = -1
+
+        # If we found a spot moe the block there
+        if space_start != -1:
+            for offset in range(block_size):
+                memory[space_start + offset] = block_id
+                memory[block_start + offset] = "."
+
+    return memory
 
 
-""" Assuming for the purposes of a disk fragmenter that we want to be operating 
-    on a mutable data structure and perform the file movement in the same momory space
-    So I won't be making a copy of the data """
-#def defragment(disk, whole_file=False):
-
-disk_map = load_text_from_file('input.txt')
-disk_map = [2,3,3,3,1,3,3,1,2,1,4,1,4,1,3,1,4,0,2]
-disk = build_disk(disk_map)
-print(disk) 
-print(f"Number of files: {disk.num_files()}")
-print(f"Number of slots: {disk.num_slots()}")
-defragmentor = Defragmentor(disk)
-defragmentor.set_debug_draw(True)
-defragmentor.defragment(whole_file=False)
-
-#debug_draw_disk(disk)
-#defragment(disk, whole_file=True)
-#debug_draw_disk(disk)
-#print(checksum(disk))
+data = load_text_from_file("input.txt")
+initial_memory, blocks = build_memory_and_blocks(data)
+puzzle1_result = defragment_using_partial_blocks(initial_memory, blocks)
+puzzle2_result = defragment_using_whole_blocks(initial_memory, blocks)
+print(compute_checksum(puzzle1_result))
+print(compute_checksum(puzzle2_result))

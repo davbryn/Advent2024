@@ -1,3 +1,5 @@
+import math
+
 class Point2D:
     def __init__(self, x, y):
         self.x = x
@@ -17,6 +19,14 @@ class Point2D:
         if isinstance(val, (int)):
             return Point2D(self.x * val, self.y * val)
         return NotImplemented
+    
+    def __eq__(self, other):
+        if not isinstance(other, Point2D):
+            return False
+        return self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
 
     
     
@@ -28,6 +38,7 @@ class Point2D:
     @staticmethod
     def distance(pointA, pointB):
         return Point2D(pointA.x - pointB.x, pointA.y - pointB.y)
-         
+    
+
     def __repr__(self):
         return f"Point2D(x={self.x}, y={self.y})"
