@@ -1,5 +1,4 @@
 def apply_rule(stone):
-    # stone is an integer
     label = str(stone)
     if stone == 0:
         return [1]
