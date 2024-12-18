@@ -203,56 +203,107 @@ cpu = Computer()
 
 
 # Run the CPU, it will generate a new decompilation function
-std_io = cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).run()
+#std_io = cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).run()
+std_io = cpu.load_state({"A": 27334280, "B": 0, "C": 0, "IP":0, "instructions":[2,4,1,2,7,5,0,3,1,7,4,1,5,5,3,0]}).run()
 
 # Replace the below function with the generated decompilation function
 
-''' Decompilation of Program [0, 1, 5, 4, 3, 0] - DateTime: 2024-12-18 18:45:00 '''
+''' Decompilation of Program [2, 4, 1, 2, 7, 5, 0, 3, 1, 7, 4, 1, 5, 5, 3, 0] - DateTime: 2024-12-18 18:47:52 '''
 def decompliation():
 
         outputs = [] 
 
-        a = 729
+        a = 27334280
         d = 0
 
-        d = 2 ** 1
+        b = a % 8
+        b = b ^ 2
+        d = 2 ** 2
+        c = a // d
+        d = 2 ** 3
         a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
-        d = 2 ** 1
+        b = a % 8
+        b = b ^ 2
+        d = 2 ** 3
+        c = a // d
+        d = 2 ** 3
         a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
-        d = 2 ** 1
+        b = a % 8
+        b = b ^ 2
+        d = 2 ** 0
+        c = a // d
+        d = 2 ** 3
         a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
+        b = a % 8
+        b = b ^ 2
         d = 2 ** 1
+        c = a // d
+        d = 2 ** 3
         a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
-        d = 2 ** 1
+        b = a % 8
+        b = b ^ 2
+        d = 2 ** 3
+        c = a // d
+        d = 2 ** 3
         a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
-        d = 2 ** 1
+        b = a % 8
+        b = b ^ 2
+        d = 2 ** 0
+        c = a // d
+        d = 2 ** 3
         a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
-        d = 2 ** 1
+        b = a % 8
+        b = b ^ 2
+        d = 2 ** 2
+        c = a // d
+        d = 2 ** 3
         a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
-        d = 2 ** 1
+        b = a % 8
+        b = b ^ 2
+        d = 2 ** 7
+        c = a // d
+        d = 2 ** 3
         a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
-        d = 2 ** 1
+        b = a % 8
+        b = b ^ 2
+        d = 2 ** 3
+        c = a // d
+        d = 2 ** 3
         a = a // d
-        outputs.append(a % 8)
-
-        d = 2 ** 1
-        a = a // d
+        b = b ^ 7
+        b = b ^ c
         outputs.append(a % 8)
 
         return outputs
