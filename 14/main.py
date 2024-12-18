@@ -130,30 +130,25 @@ class Computer():
     
 
     def adv_func(self, operand):
-        old_val = self.A
         d = 2 ** operand
         self.A = self.A // d
         self.IP += 2
 
     def bxl_func(self, operand):
-        old_val = self.B
         self.B = self.B ^ operand
         self.IP += 2
 
     def bst_func(self, operand):
-        old_val = self.B
         self.B = operand % 8
         self.IP += 2
 
     def jnz_func(self, operand):
         if self.A != 0:
-            old_val = self.IP
             self.IP = operand
         else:
             self.IP += 2
 
     def bxc_func(self, operand=None): # Operand is not used
-        old_val = self.B
         self.B = self.B ^ self.C
         self.IP += 2
 
@@ -164,13 +159,11 @@ class Computer():
         self.IP += 2
 
     def bdv_func(self, operand):
-        old_val = self.B
         d = 2 ** operand
         self.B = self.A // d
         self.IP += 2
 
     def cdv_func(self, operand):
-        old_val = self.C
         d = 2 ** operand
         self.C = self.A // d
         self.IP += 2
@@ -203,10 +196,20 @@ cpu = Computer()
 
 
 # Run the CPU, it will generate a new decompilation function
+
+# VVV Simple Decompilation is reversible VVV
 #std_io = cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).run()
+
+# VVV Complex Decompilation is not reversible - Isn't respecting Combo Operands... VVV
 std_io = cpu.load_state({"A": 27334280, "B": 0, "C": 0, "IP":0, "instructions":[2,4,1,2,7,5,0,3,1,7,4,1,5,5,3,0]}).run()
 
 # Replace the below function with the generated decompilation function
+
+'''
+
+AUTO GENERATED CODE BELOW
+
+'''
 
 ''' Decompilation of Program [2, 4, 1, 2, 7, 5, 0, 3, 1, 7, 4, 1, 5, 5, 3, 0] - DateTime: 2024-12-18 18:47:52 '''
 def decompliation():
