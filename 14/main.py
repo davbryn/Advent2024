@@ -1,4 +1,5 @@
 from enum import Enum
+from datetime import datetime
 
 class Computer():
     
@@ -72,94 +73,65 @@ class Computer():
         if len(self.instructions) < 2 or self.IP > len(self.instructions) - 2:
             return None, None
         opcode = self.instructions[self.IP]
-        operand = self.get_operand(self.instructions[self.IP + 1], combo=opcode in [0,2,5,6,7])
+        operand = self.get_operand(self.instructions[self.IP + 1], combo=self.Opcode(opcode) in [self.Opcode.ADV, self.Opcode.BST, self.Opcode.OUT, self.Opcode.BDV, self.Opcode.CDV])
         return opcode, operand
     
     def decode(self, instruction):
         for i in instruction:
             self.instructions.append(i)
 
-    def decompile(self):
-        decompiled = []
-        decompiled.append(f"a = {self.A}")
-        decompiled.append("done = False")
-        decompiled.append("While !done:")
-        for i in range(0, len(self.instructions), 2):
-            opcode = self.instructions[i]
-            operand = self.instructions[i + 1]
-            if opcode == self.Opcode.ADV.value:
-                decompiled.append(f"\td = 2 ^ {operand}")
-                decompiled.append(f"\ta = a // d")
-            elif opcode == self.Opcode.BXL.value:
-                decompiled.append(f"\tb = b xor {operand}")
-            elif opcode == self.Opcode.BST.value:
-                decompiled.append(f"\tb = b % {operand}")
-            elif opcode == self.Opcode.JNZ.value:
-                decompiled.append(f"\tif a != 0:")
-                decompiled.append(f"\t\tGOTO {operand}")
-            elif opcode == self.Opcode.BXC.value:
-                decompiled.append(f"\tb = b xor c")
-            elif opcode == self.Opcode.OUT.value:
-                decompiled.append(f"\tprint({operand} % 8)")
-            elif opcode == self.Opcode.BDV.value:
-                decompiled.append(f"\td = 2 ^ {operand}")
-                decompiled.append(f"\tb = a // {operand}")
-            elif opcode == self.Opcode.CDV.value:
-                decompiled.append(f"\td = 2 ^ {operand}")
-                decompiled.append(f"\tc = a // {operand}")
-        return decompiled
+    def decompile(self, opcode=None, operand=None):
+        decompilation = []
+
+        if opcode == self.Opcode.ADV.value:
+            decompilation.append(f"d = 2 ** {operand}\n")
+            decompilation.append(f"a = a // d")
+        elif opcode == self.Opcode.BXL.value:
+            decompilation.append(f"b = b ^ {operand}")
+        elif opcode == self.Opcode.BST.value:
+            decompilation.append(f"b = {operand} % 8")
+        #elif opcode == self.Opcode.JNZ.value:
+           # decompilation.append(f"if a != 0:\n")
+            #decompilation.append(f"\tself.call_fun({operand})")
+        elif opcode == self.Opcode.BXC.value:
+            decompilation.append(f"b = b ^ c")
+        elif opcode == self.Opcode.OUT.value:
+            decompilation.append(f"print(a % 8)")
+        elif opcode == self.Opcode.BDV.value:
+            decompilation.append(f"d = 2 ** {operand}\n")
+            decompilation.append(f"b = a // d")
+        elif opcode == self.Opcode.CDV.value:
+            decompilation.append(f"d = 2 ** {operand}\n")
+            decompilation.append(f"c = a // d")
+        return decompilation
+            
     
-    def run_vtable(self):
-        running = True
-        print(f"Program: {self.instructions}")
-        while running:
-            opcode, operand = self.fetch()
-            if opcode != None:
-                opcode = self.Opcode(opcode)
-                if self.debug_enabled:
-                    print(f"Opcode: {opcode.name:<4} Operand: {operand:<3}")
-            if opcode == None:
-                running = False
-            if opcode != None:
-                self.call_fun(opcode.value, operand)
-
-        
-        print(f">> {self.std_io}")
-
     def run(self):
         running = True
-        print(f"Program: {self.instructions}")
+        decompilation = []
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        decompilation.append(f"''' Decompilation of Program {self.instructions} - DateTime: {current_time} '''")
+        decompilation.append(f"a = {self.A}")
+        decompilation.append(f"b = {self.B}")
+        decompilation.append(f"c = {self.C}")
+        decompilation.append(f"d = 0")
+        if self.debug_enabled:
+            print(f"Program: {self.instructions}")
         while running:
             opcode, operand = self.fetch()
-            if opcode != None:
-                opcode = self.Opcode(opcode)
-                if self.debug_enabled:
-                    print(f"Opcode: {opcode.name:<4} Operand: {operand:<3}")
-            if opcode == None:
-                running = False
-            if opcode == self.Opcode.ADV:
-                self.adv_func(operand)
-            elif opcode == self.Opcode.BXL:
-                self.bxl_func(operand)
-            elif opcode == self.Opcode.BST:
-                self.bst_func(operand)
-            elif opcode == self.Opcode.JNZ:
-                self.jnz_func(operand)
-            elif opcode == self.Opcode.BXC:
-                self.bxc_func()
-            elif opcode == self.Opcode.OUT:
-                self.out_func(operand)
-            elif opcode == self.Opcode.BDV:
-                self.bdv_func(operand)
-            elif opcode == self.Opcode.CDV:
-                self.cdv_func(operand)
+            if opcode is not None:
+                decompilation.append(self.decompile(opcode, operand))
+                self.call_fun(opcode, operand)
             else:
-                if opcode != None:
-                    print(f"Unknown opcode: {opcode.name:<4} :: {self.dump_state()}")
                 running = False
 
         
-        print(f">> {self.std_io}")
+        
+        for line in decompilation:
+            print("".join(line))
+
+
+
 
     def adv_func(self, operand):
         old_val = self.A
@@ -235,9 +207,7 @@ class Computer():
     def dump_state(self):
         return f"A={self.A:<10} B={self.B:<10} C={self.C:<10}"
     
-def div_func(numerator, denominator):
-    out = numerator // denominator % 8
-    print(out)
+
 
 
 cpu = Computer()
@@ -247,19 +217,55 @@ cpu = Computer()
 #cpu.load_state({"A": 0, "B": 29, "C": 0, "IP":0, "instructions":[1,7]}).run()
 #cpu.load_state({"A": 0, "B": 2024, "C": 43690, "IP":0, "instructions":[4,0]}).run()
 #cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).run()
-cpu.load_state({"A": 27334280, "B": 0, "C": 0, "IP":0, "instructions":[2,4,1,2,7,5,0,3,1,7,4,1,5,5,3,0]}).set_decompile_enabled(True).run()
-cpu.load_state({"A": 27334280, "B": 0, "C": 0, "IP":0, "instructions":[2,4,1,2,7,5,0,3,1,7,4,1,5,5,3,0]}).set_decompile_enabled(True).run_vtable()
 
-decompilation = cpu.load_state({"A": 117440, "B": 0, "C": 0, "IP":0, "instructions":[0,3,5,4,3,0]}).decompile()#set_decompile_enabled(True).run()
-for line in decompilation:
-    print(line)
+#cpu.load_state({"A": 27334280, "B": 0, "C": 0, "IP":0, "instructions":[2,4,1,2,7,5,0,3,1,7,4,1,5,5,3,0]}).set_decompile_enabled(False).run()
+
+#cpu.load_state({"A": 117440, "B": 0, "C": 0, "IP":0, "instructions":[0,3,5,4,3,0]}).set_decompile_enabled(False).run()
+cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).run()
+#cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).set_decompile_enabled(True).run()
 
 
-v_table = []
+def foo():
+    ''' Decompilation of Program [0, 1, 5, 4, 3, 0] - DateTime: 2024-12-18 16:33:36 '''
+    a = 729
+    d = 0
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
 
-def div_func(numerator, denominator):
-    out = numerator // denominator % 8
-    print(out)
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
 
-v_table.append(div_func)
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
 
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
+
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
+
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
+
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
+
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
+
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
+
+    d = 2 ** 1
+    a = a // d
+    print(a % 8)
+foo()
