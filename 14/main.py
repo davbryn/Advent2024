@@ -15,7 +15,6 @@ class Computer():
     
     v_table = []
 
-
     def __init__(self):
         # Registers
         self.A = 0
@@ -27,6 +26,7 @@ class Computer():
         self.decompile_enabled = False
         self.std_io = "" # Standard IO
         self._build_v_table()
+        self.decompilation = []
 
     def set_decompile_enabled(self, enabled):
         self.decompile_enabled = enabled
@@ -47,7 +47,7 @@ class Computer():
         self.v_table.append(self.cdv_func)
     
     def call_fun(self, index, operand=None, arg=None):
-        if arg != None:
+        if arg is not None:
             return self.v_table[index](operand, arg)
         else:
             self.v_table[index](operand)
@@ -55,7 +55,7 @@ class Computer():
     def get_operand(self, operand, combo=False):
         if not combo:
             return operand
-        if operand >= 0 and operand <= 3:
+        if 0 <= operand <= 3:
             return operand
         elif operand == 4:
             return self.A
@@ -66,14 +66,19 @@ class Computer():
         elif operand == 7:
             return self.C
         else:
-            return
-        
+            return None
         
     def fetch(self):
         if len(self.instructions) < 2 or self.IP > len(self.instructions) - 2:
             return None, None
         opcode = self.instructions[self.IP]
-        operand = self.get_operand(self.instructions[self.IP + 1], combo=self.Opcode(opcode) in [self.Opcode.ADV, self.Opcode.BST, self.Opcode.OUT, self.Opcode.BDV, self.Opcode.CDV])
+        operand = self.get_operand(
+            self.instructions[self.IP + 1],
+            combo=self.Opcode(opcode) in [
+                self.Opcode.ADV, self.Opcode.BST, 
+                self.Opcode.OUT, self.Opcode.BDV, self.Opcode.CDV
+            ]
+        )
         return opcode, operand
     
     def decode(self, instruction):
@@ -82,19 +87,17 @@ class Computer():
 
     def decompile(self, opcode=None, operand=None):
         decompilation = []
-
         if opcode == self.Opcode.ADV.value:
             decompilation.append(f"\td = 2 ** {operand}\n")
             decompilation.append(f"\ta = a // d")
         elif opcode == self.Opcode.BXL.value:
             decompilation.append(f"\tb = b ^ {operand}")
         elif opcode == self.Opcode.BST.value:
-            decompilation.append(f"\tb = a % 8")
-        # We don't have to decompile JNZ since it's a control flow instruction
+            decompilation.append(f"\tb = get_operand(a, b, c, {self.instructions[self.IP + 1]}, combo=True) % 8)")
         elif opcode == self.Opcode.BXC.value:
             decompilation.append(f"\tb = b ^ c")
         elif opcode == self.Opcode.OUT.value:
-            decompilation.append(f"\toutputs.append(a % 8)")
+            decompilation.append(f"\toutputs.append(get_operand(a, b, c, {self.instructions[self.IP + 1]}, combo=True) % 8)")
         elif opcode == self.Opcode.BDV.value:
             decompilation.append(f"\td = 2 ** {operand}\n")
             decompilation.append(f"\tb = a // d")
@@ -103,29 +106,49 @@ class Computer():
             decompilation.append(f"\tc = a // d")
         return decompilation
             
-    
     def run(self):
         running = True
+        # Decompilation is optional, we keep it but do not print if not needed
         decompilation = []
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         decompilation.append(f"''' Decompilation of Program {self.instructions} - DateTime: {current_time} '''")
         decompilation.append(f"def decompliation():\n")
+        combo_helper = """
+        def get_operand(a, b, c, operand, combo=False):
+            if not combo:
+                return operand
+            if operand >= 0 and operand <= 3:
+                return operand
+            elif operand == 4:
+                return a
+            elif operand == 5:
+                return b
+            elif operand == 6:
+                return c
+            elif operand == 7:
+                return c
+            else:
+                return None
+        """
+        decompilation.append(f"{combo_helper}\n")
         decompilation.append(f"\toutputs = [] \n")
         decompilation.append(f"\ta = {self.A}")
+        decompilation.append(f"\tb = 0\n")
+        decompilation.append(f"\tc = 0\n")
         decompilation.append(f"\td = 0\n")
+
         if self.debug_enabled:
             print(f"Program: {self.instructions}")
         while running:
             opcode, operand = self.fetch()
+            
             if opcode is not None:
                 decompilation.append(self.decompile(opcode, operand))
                 self.call_fun(opcode, operand)
             else:
                 running = False
         decompilation.append(f"\treturn outputs")
-        for line in decompilation:
-            print("".join(line))
-        
+        self.decompilation = decompilation
         return self.std_io
     
 
@@ -148,7 +171,7 @@ class Computer():
         else:
             self.IP += 2
 
-    def bxc_func(self, operand=None): # Operand is not used
+    def bxc_func(self, operand=None):
         self.B = self.B ^ self.C
         self.IP += 2
 
@@ -179,142 +202,68 @@ class Computer():
 
     def dump_state(self):
         return f"A={self.A:<10} B={self.B:<10} C={self.C:<10}"
-    
+
+
+def search_initial_value(computer):
+    """
+    Search for the lowest initial value of register A that causes the
+    program to output a copy of its own instructions.
+    """
+
+    def _search_at_position(position, current_value=0):
+        if position < 0:
+            return current_value
+
+        # Try all possible values for this 'digit'
+        for i in range(8):
+            candidate_value = current_value + i * (8 ** position)
+            
+            computer.load_state({
+                "A": candidate_value,
+                "B": 0,
+                "C": 0,
+                "IP": 0,
+                "instructions": computer.instructions[:]
+            })
+
+            out_str = computer.run().strip()
+            if out_str == "":
+                out_list = []
+            else:
+                out_list = out_str.split(",")
+
+            # Check if we can compare the position-th output to the instructions
+            if position >= len(out_list):
+                continue
+
+            digit_str = out_list[position]
+            # Ensure it's a valid digit
+            if not digit_str.isdigit():
+                continue
+
+            output_digit = int(digit_str)
+            if output_digit != computer.instructions[position]:
+                continue
+
+            # If it matches, go one position deeper
+            result = _search_at_position(position - 1, candidate_value)
+            if result is not None:
+                return result
+
+        return None
+
+    return _search_at_position(len(computer.instructions) - 1)
+
+
 
 
 
 cpu = Computer()
-#cpu.load_state({"A": 0, "B": 0, "C": 9, "IP":0, "instructions":[2, 6]}).run()
-#cpu.load_state({"A": 10, "B": 0, "C": 0, "IP":0, "instructions":[5,0,5,1,5,4]}).run()
-#cpu.load_state({"A": 2024, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).run()
-#cpu.load_state({"A": 0, "B": 29, "C": 0, "IP":0, "instructions":[1,7]}).run()
-#cpu.load_state({"A": 0, "B": 2024, "C": 43690, "IP":0, "instructions":[4,0]}).run()
-#cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).run()
-#cpu.load_state({"A": 130402909397776, "B": 0, "C": 0, "IP":0, "instructions":[2,4,1,2,7,5,0,3,1,7,4,1,5,5,3,0]}).set_decompile_enabled(False).run()
-#cpu.load_state({"A": ≈, "B": 0, "C": 0, "IP":0, "instructions":[0,3,5,4,3,0]}).set_decompile_enabled(False).run()
-#cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).set_decompile_enabled(True).run()
+outputs = cpu.load_state({"A": 27334280, "B": 0, "C": 0, "IP":0, "instructions":[2,4,1,2,7,5,0,3,1,7,4,1,5,5,3,0]}).run()
+print(f"CPU output is {outputs}")
 
+result = search_initial_value(cpu)
+print(f"Quine seed is {result}")
 
-# Run the CPU, it will generate a new decompilation function
-
-# VVV Simple Decompilation is reversible VVV
-#std_io = cpu.load_state({"A": 729, "B": 0, "C": 0, "IP":0, "instructions":[0,1,5,4,3,0]}).run()
-
-# VVV Complex Decompilation is not reversible - Isn't respecting Combo Operands... VVV
-std_io = cpu.load_state({"A": 27334280, "B": 0, "C": 0, "IP":0, "instructions":[2,4,1,2,7,5,0,3,1,7,4,1,5,5,3,0]}).run()
-
-# Replace the below function with the generated decompilation function
-
-'''
-
-AUTO GENERATED CODE BELOW
-
-'''
-
-''' Decompilation of Program [2, 4, 1, 2, 7, 5, 0, 3, 1, 7, 4, 1, 5, 5, 3, 0] - DateTime: 2024-12-18 18:47:52 '''
-def decompliation():
-
-        outputs = [] 
-
-        a = 27334280
-        d = 0
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 2
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 3
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 0
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 1
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 3
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 0
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 2
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 7
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        b = a % 8
-        b = b ^ 2
-        d = 2 ** 3
-        c = a // d
-        d = 2 ** 3
-        a = a // d
-        b = b ^ 7
-        b = b ^ c
-        outputs.append(a % 8)
-
-        return outputs
-
-
-#print(reconstruct_a_from_outputs(outputs))
-print("std_io: ", std_io)
-outputs = decompliation()
-print("decomp: ",outputs)
-
-
+for decompilation in cpu.decompilation:
+    print("".join(decompilation))
